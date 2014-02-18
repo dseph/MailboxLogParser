@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Windows.Forms;
 
 namespace MailboxLogParser
@@ -241,6 +242,25 @@ namespace MailboxLogParser
 
         #region Private Methods
 
+        public static string ConvertToBase16(string base64)
+        {
+            string base16 = string.Empty;
+
+            byte[] bytes = Convert.FromBase64String(base64);
+            return GetStringFromBytes(bytes);
+        }
+
+        public static string GetStringFromBytes(byte[] bytes)
+        {
+            StringBuilder ret = new StringBuilder();
+            foreach (byte b in bytes)
+            {
+                ret.Append(Convert.ToString(b, 16).PadLeft(2, '0'));
+            }
+
+            return ret.ToString();
+        }
+
         private void ExecuteSearch(string searchText)
         {
             Stopwatch total = new Stopwatch();
@@ -251,15 +271,27 @@ namespace MailboxLogParser
                 Stopwatch linq = new Stopwatch();
                 linq.Start();
 
-                // Query the raw data for each row in the report to see i
+                string altText = searchText;
+                if (searchText.StartsWith("[GOID]"))
+                {
+                    searchText = searchText.Replace("[GOID]", "");
+                    altText = ConvertToBase16(searchText).Substring(40);
+                }
+
+                // Query the raw data for each row in the report to see if
                 // they contain the search text
                 var searchHitRows = from r in this.Report.ReportRows
-                                    where r.RawData.Contains(searchText)
+                                    where r.RawData.ToUpper().Contains(searchText.ToUpper()) || r.RawData.ToUpper().Contains(altText.ToUpper())
                                     select r.RowId as string;
 
                 // If there are no search results bail out
                 if (searchHitRows.Count() == 0)
                 {
+                    foreach (DataGridViewRow row in this.LogReportGrid.Rows)
+                    {
+                        // Row is not a search hit, hide it.
+                        row.Visible = false;
+                    }
                     return;
                 }
 

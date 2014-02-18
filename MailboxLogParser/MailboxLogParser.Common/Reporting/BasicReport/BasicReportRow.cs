@@ -11,7 +11,7 @@ namespace MailboxLogParser.Common.Reporting.BasicReport
         protected MailboxLogEntry LogEntry { get; private set; }
 
         internal BasicReportRow(MailboxLogEntry logEntry) :
-            base(logEntry.Identifier)
+            base(logEntry.Name + logEntry.Identifier)
         {
             this.LogEntry = logEntry;
         }
